@@ -148,7 +148,9 @@ uv run pytest
 ```
 
 Conventional Commits are required — see [CONTRIBUTING.md](CONTRIBUTING.md).
-The behavioral reference for Proton label semantics is the sibling
+The product requirements, including live-verification results against a
+real Bridge v3 install, live in [`docs/prd.md`](docs/prd.md). The
+behavioral reference for Proton label semantics is the sibling
 [email-mcp](https://github.com/codefuturist/email-mcp) TypeScript server.
 
 **Bridge v3 notes** (verified against a real install):
