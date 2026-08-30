@@ -15,7 +15,17 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="command")
     subparsers.add_parser("serve", help="Run the MCP server over stdio (default)")
+    subparsers.add_parser(
+        "setup", help="Guided account setup: discover Bridge, write config, check login"
+    )
     args = parser.parse_args(argv)
+
+    if args.command == "setup":
+        import sys
+
+        from protonmail_mcp.setup_wizard import run_setup
+
+        sys.exit(run_setup())
 
     if args.command in (None, "serve"):
         from protonmail_mcp.server import run
