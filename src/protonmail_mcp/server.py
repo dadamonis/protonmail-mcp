@@ -26,6 +26,13 @@ def ping() -> str:
     return "pong"
 
 
+# Register the full tool surface (import placed after mcp exists so tool
+# modules can never import the server back).
+from protonmail_mcp.tools import register  # noqa: E402
+
+register(mcp)
+
+
 def run() -> None:
     """Run the MCP server over stdio."""
     mcp.run(transport="stdio")

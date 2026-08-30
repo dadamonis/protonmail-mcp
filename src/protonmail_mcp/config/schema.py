@@ -26,6 +26,7 @@ class AccountConfig(BaseModel):
 
     name: str = "default"
     email: str
+    display_name: str | None = None
     username: str | None = None
     password: SecretStr
     imap: Endpoint = Field(default_factory=Endpoint)
