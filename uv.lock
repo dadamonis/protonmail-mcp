@@ -313,6 +313,15 @@ wheels = [
 ]
 
 [[package]]
+name = "imap-tools"
+version = "1.15.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/59/4e/acf9a7d59932548bc749fe0f5ae852e6da00b640303ed72786f697944b69/imap_tools-1.15.0.tar.gz", hash = "sha256:a90f948549ab000d96caf17c90e63b114f8788ba4a0d3f9274a96c0e108c3805", size = 48497, upload_time = "2026-08-06T10:25:26.567Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/50/eb/a4ad6ec962af2806c3484adb1869c24a04d8ef8c2034f2dd2b0f48459b0a/imap_tools-1.15.0-py3-none-any.whl", hash = "sha256:7bb0003c8bf124b80968c7bef786e4577d8365e9afb6551dc15b13161b688bdc", size = 36512, upload_time = "2026-08-06T10:25:24.377Z" },
+]
+
+[[package]]
 name = "iniconfig"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -594,6 +603,7 @@ name = "protonmail-mcp"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "imap-tools" },
     { name = "mcp" },
     { name = "pydantic" },
 ]
@@ -608,6 +618,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "imap-tools", specifier = ">=1.15.0" },
     { name = "mcp", specifier = ">=2.1" },
     { name = "pydantic", specifier = ">=2.7" },
 ]

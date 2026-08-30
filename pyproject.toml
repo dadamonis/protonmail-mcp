@@ -9,6 +9,7 @@ requires-python = ">=3.12"
 authors = [{ name = "codefuturist" }]
 keywords = ["mcp", "protonmail", "proton", "bridge", "email", "imap", "smtp"]
 dependencies = [
+    "imap-tools>=1.15.0",
     "mcp>=2.1",
     "pydantic>=2.7",
 ]

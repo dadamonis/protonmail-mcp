@@ -10,6 +10,8 @@ import smtplib
 import socket
 import ssl
 
+from imap_tools import MailboxLoginError
+
 
 class BridgeError(Exception):
     """Base class for ProtonMail Bridge failures."""
@@ -73,7 +75,7 @@ def classify_connection_error(
     if isinstance(exc, ssl.SSLError):
         return BridgeCertificateError(f"(TLS error: {exc})")
 
-    if isinstance(exc, smtplib.SMTPAuthenticationError):
+    if isinstance(exc, smtplib.SMTPAuthenticationError | MailboxLoginError):
         return BridgeAuthError(account)
     if isinstance(exc, imaplib.IMAP4.error) and _looks_like_auth_failure(exc):
         return BridgeAuthError(account)
