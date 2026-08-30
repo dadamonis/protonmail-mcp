@@ -95,9 +95,45 @@ def _read_ports_from_prefs(data_dir: Path) -> tuple[int, int] | None:
     return imap, smtp
 
 
-def find_cert(data_dir: Path) -> Path | None:
-    cert_path = data_dir / "cert.pem"
-    return cert_path if cert_path.is_file() else None
+CERT_EXPORT_INSTRUCTIONS = (
+    "Bridge v3 keeps its TLS certificate inside its encrypted vault, so it must "
+    "be exported once: open Bridge → Settings → Advanced settings → "
+    '"Export TLS certificates", and save cert.pem to ~/.config/protonmail-mcp/ '
+    "(or set PROTONMAIL_MCP_CERT to wherever you saved it)."
+)
+
+
+def find_cert(
+    data_dir: Path,
+    env: Mapping[str, str] | None = None,
+    home: Path | None = None,
+) -> Path | None:
+    """Locate Bridge's TLS certificate.
+
+    Bridge v3 stores the certificate inside its encrypted vault and does
+    not write cert.pem to the data dir (verified against Bridge v3 on
+    macOS); users export it via Settings → Advanced settings → "Export
+    TLS certificates". Search order:
+
+    1. $PROTONMAIL_MCP_CERT (explicit path)
+    2. <config dir>/cert.pem — the location our setup wizard suggests
+    3. <bridge data dir>/cert.pem — where Bridge v2 wrote it
+    """
+    env = env if env is not None else os.environ
+    home = home or Path.home()
+
+    if explicit := env.get("PROTONMAIL_MCP_CERT"):
+        path = Path(explicit)
+        if path.is_file():
+            return path
+        logger.warning("PROTONMAIL_MCP_CERT is set to %s but no file exists there", path)
+
+    xdg = env.get("XDG_CONFIG_HOME")
+    config_dir = (Path(xdg) if xdg else home / ".config") / "protonmail-mcp"
+    for candidate in (config_dir / "cert.pem", data_dir / "cert.pem"):
+        if candidate.is_file():
+            return candidate
+    return None
 
 
 def create_bridge_ssl_context(cert_path: Path) -> ssl.SSLContext:
@@ -158,5 +194,5 @@ def discover(
         imap_port=ports[0] if ports else DEFAULT_IMAP_PORT,
         smtp_port=ports[1] if ports else DEFAULT_SMTP_PORT,
         ports_source="discovered" if ports else "defaults",
-        cert_path=find_cert(data_dir),
+        cert_path=find_cert(data_dir, env=env, home=home),
     )

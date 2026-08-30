@@ -15,6 +15,7 @@ from protonmail_mcp.bridge import (
     classify_connection_error,
     create_bridge_ssl_context,
 )
+from protonmail_mcp.bridge.discovery import CERT_EXPORT_INSTRUCTIONS
 from protonmail_mcp.config import AccountConfig
 
 SEND_TIMEOUT_SECONDS = 60.0
@@ -27,10 +28,7 @@ def _open(account: AccountConfig, bridge: BridgeInfo) -> smtplib.SMTP:
     if not bridge.installed:
         raise BridgeNotInstalledError()
     if bridge.cert_path is None:
-        raise BridgeCertificateError(
-            "(Bridge's cert.pem was not found in its data directory — "
-            "has Bridge finished first-time setup?)"
-        )
+        raise BridgeCertificateError(f"(no certificate found: {CERT_EXPORT_INSTRUCTIONS})")
 
     try:
         smtp = smtplib.SMTP(host, port, timeout=SEND_TIMEOUT_SECONDS)

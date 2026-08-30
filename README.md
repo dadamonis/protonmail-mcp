@@ -151,9 +151,15 @@ Conventional Commits are required — see [CONTRIBUTING.md](CONTRIBUTING.md).
 The behavioral reference for Proton label semantics is the sibling
 [email-mcp](https://github.com/codefuturist/email-mcp) TypeScript server.
 
-**Bridge version note:** Bridge v3 keeps its port settings in an encrypted
-vault, so port discovery falls back to the defaults (1143/1025) with a
-logged notice; override ports in the config if you changed them in Bridge.
+**Bridge v3 notes** (verified against a real install):
+
+- Port settings live in Bridge's encrypted vault, so discovery falls back to
+  the defaults (1143/1025) with a logged notice; override ports in the
+  config if you changed them in Bridge.
+- The TLS certificate also lives in the vault and must be exported once:
+  Bridge → Settings → Advanced settings → "Export TLS certificates", saving
+  `cert.pem` to `~/.config/protonmail-mcp/` (or set `PROTONMAIL_MCP_CERT`
+  to its location). The `setup` wizard walks you through this.
 
 ## License
 

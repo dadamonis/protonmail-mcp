@@ -27,9 +27,13 @@ class FakeIO:
         return "\n".join(self.output)
 
 
-def bridge_home(tmp_path: Path) -> Path:
+def bridge_home(tmp_path: Path, with_cert: bool = True) -> Path:
     data_dir = tmp_path / ".config" / "protonmail" / "bridge-v3"
     data_dir.mkdir(parents=True, exist_ok=True)
+    if with_cert:
+        cert_dir = tmp_path / ".config" / "protonmail-mcp"
+        cert_dir.mkdir(parents=True, exist_ok=True)
+        (cert_dir / "cert.pem").write_text("fake exported cert")
     return tmp_path
 
 
@@ -109,3 +113,77 @@ def test_password_never_echoed_to_output(tmp_path: Path) -> None:
     io = FakeIO(["user@pm.local", "", ""], password="s3cret-bridge-pw")
     run(tmp_path, io)
     assert "s3cret-bridge-pw" not in io.text
+
+
+class TestCertExportFlow:
+    """Bridge v3 keeps the TLS cert in its encrypted vault — the wizard
+    must guide the user through exporting it."""
+
+    def test_missing_cert_shows_export_instructions(self, tmp_path: Path) -> None:
+        home = bridge_home(tmp_path, with_cert=False)
+        # Answers: 3 failed re-checks (Enter), then account details.
+        io = FakeIO(["", "", "", "user@pm.local", "", ""])
+        code = run_setup(
+            input_fn=io.input,
+            getpass_fn=io.getpass,
+            print_fn=io.print,
+            config_path=tmp_path / "config.toml",
+            platform="linux",
+            env={},
+            home=home,
+            login_check=lambda email, password, bridge: [],
+        )
+        assert "Export TLS certificates" in io.text
+        assert "Continuing without the certificate" in io.text
+        assert code == 0  # setup itself still completes
+
+    def test_pasted_cert_path_is_used(self, tmp_path: Path) -> None:
+        home = bridge_home(tmp_path, with_cert=False)
+        exported = tmp_path / "exported-cert.pem"
+        exported.write_text("cert")
+        seen_cert_paths: list[Path | None] = []
+
+        def record_check(email: str, password: str, bridge: object) -> list[str]:
+            seen_cert_paths.append(getattr(bridge, "cert_path", None))
+            return []
+
+        io = FakeIO([str(exported), "user@pm.local", "", ""])
+        code = run_setup(
+            input_fn=io.input,
+            getpass_fn=io.getpass,
+            print_fn=io.print,
+            config_path=tmp_path / "config.toml",
+            platform="linux",
+            env={},
+            home=home,
+            login_check=record_check,
+        )
+        assert code == 0
+        assert seen_cert_paths == [exported]
+
+    def test_recheck_finds_freshly_exported_cert(self, tmp_path: Path) -> None:
+        home = bridge_home(tmp_path, with_cert=False)
+        cert_dir = home / ".config" / "protonmail-mcp"
+        cert_dir.mkdir(parents=True, exist_ok=True)
+
+        answers = iter(["", "user@pm.local", "", ""])
+
+        def input_and_export(prompt: str) -> str:
+            # Simulate the user exporting the cert before pressing Enter.
+            if "cert.pem" in prompt:
+                (cert_dir / "cert.pem").write_text("cert")
+            return next(answers)
+
+        io = FakeIO([])
+        code = run_setup(
+            input_fn=input_and_export,
+            getpass_fn=io.getpass,
+            print_fn=io.print,
+            config_path=tmp_path / "config.toml",
+            platform="linux",
+            env={},
+            home=home,
+            login_check=lambda email, password, bridge: [],
+        )
+        assert code == 0
+        assert "✓ Found" in io.text

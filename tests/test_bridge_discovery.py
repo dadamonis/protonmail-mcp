@@ -96,11 +96,35 @@ class TestDiscover:
         info = discover(platform="linux", env={}, home=tmp_path)
         assert info.ports_source == "defaults"
 
-    def test_cert_discovered(self, tmp_path: Path) -> None:
+    def test_cert_discovered_in_data_dir(self, tmp_path: Path) -> None:
         data_dir = make_bridge_dir(tmp_path, ".config", "protonmail", "bridge-v3")
         (data_dir / "cert.pem").write_bytes((FIXTURES / "bridge-test-cert.pem").read_bytes())
         info = discover(platform="linux", env={}, home=tmp_path)
         assert info.cert_path == data_dir / "cert.pem"
+
+    def test_exported_cert_in_config_dir_preferred(self, tmp_path: Path) -> None:
+        # Bridge v3 keeps the cert in its encrypted vault; users export it
+        # to our config dir, which wins over the (usually absent) data-dir copy.
+        make_bridge_dir(tmp_path, ".config", "protonmail", "bridge-v3")
+        config_dir = tmp_path / ".config" / "protonmail-mcp"
+        config_dir.mkdir(parents=True)
+        (config_dir / "cert.pem").write_text("exported")
+        info = discover(platform="linux", env={}, home=tmp_path)
+        assert info.cert_path == config_dir / "cert.pem"
+
+    def test_cert_env_var_wins(self, tmp_path: Path) -> None:
+        make_bridge_dir(tmp_path, ".config", "protonmail", "bridge-v3")
+        custom = tmp_path / "my-cert.pem"
+        custom.write_text("exported")
+        env = {"PROTONMAIL_MCP_CERT": str(custom)}
+        info = discover(platform="linux", env=env, home=tmp_path)
+        assert info.cert_path == custom
+
+    def test_cert_env_var_pointing_nowhere_falls_through(self, tmp_path: Path) -> None:
+        make_bridge_dir(tmp_path, ".config", "protonmail", "bridge-v3")
+        env = {"PROTONMAIL_MCP_CERT": str(tmp_path / "missing.pem")}
+        info = discover(platform="linux", env=env, home=tmp_path)
+        assert info.cert_path is None
 
 
 class TestSslContext:
